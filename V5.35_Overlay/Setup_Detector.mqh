@@ -56,6 +56,9 @@ struct SetupState
    bool              trigger_confirmed;
    bool              invalidated;
    bool              expired;
+   bool              recent_zone_touch;
+   bool              reaction_confirmed;
+   datetime          confirmation_bar_time;
 
    double            current_price;
    double            trigger_price;
@@ -117,7 +120,10 @@ void Setup_Init(SetupState &setup)
    setup.price_in_zone      = false;
    setup.trigger_confirmed  = false;
    setup.invalidated        = false;
-   setup.expired            = false;\n   setup.recent_zone_touch   = false;\n   setup.reaction_confirmed  = false;\n   setup.confirmation_bar_time = 0;
+   setup.expired            = false;
+   setup.recent_zone_touch   = false;
+   setup.reaction_confirmed  = false;
+   setup.confirmation_bar_time = 0;
 
    setup.current_price      = 0.0;
    setup.trigger_price      = 0.0;
