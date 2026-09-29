@@ -440,8 +440,12 @@ bool EntryPlan_Build(const TradingScenario &scenario,
 
    if(!Setup_IsTriggered(setup))
      {
-      reject_reason = "Zone Touch به‌تنهایی مجاز نیست؛ Setup هنوز Trigger واقعی ندارد";
-      return false;
+      plan.type = ENTRY_PLAN_WAIT;
+      plan.status = ENTRY_PLAN_STATUS_PLANNED;
+      plan.executable = false;
+      plan.entry_reachable = false;
+      plan.reason = "انتظار برای واکنش و شکست میکروساختار؛ لمس Zone به‌تنهایی Trigger نیست";
+      return true;
      }
 
    //--- [جدید] لاگ تشخیصی برای ردیابی تصمیم‌گیری
