@@ -1,0 +1,21 @@
+name: Export V5.37 test inputs
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package logs
+        run: |
+          mkdir -p /tmp/export
+          cp 'لاگ 5.37.zip' /tmp/export/
+          cp 'اطلاعات بازار.zip' /tmp/export/
+          cp 'مرجع.zip' /tmp/export/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v537-test-inputs
+          path: /tmp/export
