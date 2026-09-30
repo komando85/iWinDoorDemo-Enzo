@@ -1,4 +1,4 @@
-name: Export original Experts.zip
+name: Export original audit data
 on:
   pull_request:
     branches:
@@ -12,4 +12,9 @@ jobs:
         with:
           name: ORIGINAL_EXPERTS_ARCHIVE
           path: Experts.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MARKET_TRUTH_ARCHIVE
+          path: "اطلاعات بازار.zip"
           if-no-files-found: error
