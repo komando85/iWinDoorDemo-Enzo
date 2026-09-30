@@ -1,0 +1,14 @@
+name: Export V5.44 Reference Rebuild
+on:
+  push:
+    branches:
+      - v5.44-reference-rebuild-export-20260930
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TFlab_New_EA_V5.44_REFERENCE_REBUILD
+          path: TFlab_New_EA_V5.44_REFERENCE_REBUILD.zip
