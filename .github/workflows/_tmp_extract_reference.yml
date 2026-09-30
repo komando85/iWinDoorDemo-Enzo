@@ -1,0 +1,28 @@
+name: استخراج موقت مرجع
+
+on:
+  push:
+    branches:
+      - tmp-extract-reference-20260930
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: دریافت فایل
+        uses: actions/checkout@v4
+      - name: استخراج ZIP
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          s = Path("_tmp/Experts_base64.txt").read_text(encoding="utf-8")
+          Path("Experts_reference_exact.zip").write_bytes(base64.b64decode(s))
+          PY
+      - name: ساخت Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Experts-reference-exact
+          path: Experts_reference_exact.zip
+          if-no-files-found: error
