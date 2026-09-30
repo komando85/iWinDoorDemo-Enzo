@@ -1,7 +1,7 @@
 name: Export repository source
 on:
-  push:
-    branches: [tmp-build-537]
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
 jobs:
@@ -9,11 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Archive
-        run: |
-          zip -r /tmp/iWinDoorDemo-Enzo-source.zip . -x '.git/*'
+        run: zip -r /tmp/iWinDoorDemo-Enzo-source.zip . -x '.git/*'
       - uses: actions/upload-artifact@v4
         with:
           name: iWinDoorDemo-Enzo-source
