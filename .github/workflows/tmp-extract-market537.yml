@@ -1,0 +1,28 @@
+name: tmp-extract-market537
+on:
+  push:
+    branches:
+      - tmp-v538-build
+permissions:
+  contents: read
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract market
+        shell: bash
+        run: |
+          set +e
+          rm -rf out
+          mkdir -p out
+          unzip -q "اطلاعات بازار.zip" -d out
+          rc=$?
+          echo "unzip_exit=$rc"
+          find out -type f | sort
+      - name: Upload extracted market
+        uses: actions/upload-artifact@v4
+        with:
+          name: v537-market-data
+          path: out
+          if-no-files-found: error
