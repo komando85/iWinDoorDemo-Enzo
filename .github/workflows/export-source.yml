@@ -1,4 +1,4 @@
-name: Export repository source
+name: Export project files
 on:
   pull_request:
     branches: [main]
@@ -9,9 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Archive
-        run: zip -r /tmp/iWinDoorDemo-Enzo-source.zip . -x '.git/*'
+      - name: Prepare files
+        run: |
+          mkdir -p /tmp/export
+          cp 'لاگ 5.36.zip' /tmp/export/
+          cp 'اطلاعات بازار.zip' /tmp/export/
+          cp 'مرجع.zip' /tmp/export/
       - uses: actions/upload-artifact@v4
         with:
-          name: iWinDoorDemo-Enzo-source
-          path: /tmp/iWinDoorDemo-Enzo-source.zip
+          name: project-zips
+          path: /tmp/export
