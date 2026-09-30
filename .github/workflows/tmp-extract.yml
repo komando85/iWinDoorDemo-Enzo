@@ -11,14 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Extract reference
+        shell: bash
         run: |
+          set +e
           rm -rf out
           mkdir -p out
           unzip -q "مرجع.zip" -d out
+          rc=$?
+          echo "unzip_exit=$rc"
           echo "FILES:"
           find out -type f | sort
+          test -d out || exit 1
       - name: Upload extracted reference
         uses: actions/upload-artifact@v4
         with:
           name: v538-reference-source
           path: out
+          if-no-files-found: error
