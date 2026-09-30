@@ -1,0 +1,28 @@
+name: tmp-extract-log537
+on:
+  push:
+    branches:
+      - tmp-v538-build
+permissions:
+  contents: read
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract log
+        shell: bash
+        run: |
+          set +e
+          rm -rf out
+          mkdir -p out
+          unzip -q "لاگ 5.37.zip" -d out
+          rc=$?
+          echo "unzip_exit=$rc"
+          find out -type f | sort
+      - name: Upload extracted log
+        uses: actions/upload-artifact@v4
+        with:
+          name: v537-log-extracted
+          path: out
+          if-no-files-found: error
