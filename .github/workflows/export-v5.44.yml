@@ -1,5 +1,8 @@
 name: Export V5.44 Reference Rebuild
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - v5.44-reference-rebuild-export-20260930
