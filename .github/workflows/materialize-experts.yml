@@ -1,10 +1,16 @@
-name: inspect-lock
+name: build-v568
 on:
   push:
 jobs:
-  inspect:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect
-        run: python _inspect_lock.py
+      - name: Build V5.68
+        run: python build_v568.py
+      - name: Upload V5.68 package
+        uses: actions/upload-artifact@v4
+        with:
+          name: TFlab_Experts_V5.68
+          path: TFlab_Experts_V5.68.zip
+          if-no-files-found: error
