@@ -1,4 +1,4 @@
-name: inspect-v568-truth-use
+name: inspect-v568-reading
 on:
   push:
 jobs:
@@ -6,16 +6,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect truth population and locks
+      - name: Inspect reading and candidate scores
         shell: python
         run: |
           import zipfile
           with zipfile.ZipFile('Experts.zip') as z:
-              lines=z.read('ربات مرجع/TFlab New EA V.5.mq5').decode('utf-8-sig',errors='replace').splitlines()
-              for a,b in [(2900,3320),(1470,1535),(1580,1695),(3960,4055)]:
-                  print(f"\n===== MAIN {a}-{b} =====")
-                  print("\n".join(f"{i+1}: {lines[i]}" for i in range(a-1,min(b,len(lines)))))
-              t=z.read('ربات مرجع/Market_Truth_Engine.mqh').decode('utf-8-sig',errors='replace').splitlines()
-              for a,b in [(280,390)]:
-                  print(f"\n===== TRUTH {a}-{b} =====")
-                  print("\n".join(f"{i+1}: {t[i]}" for i in range(a-1,min(b,len(t)))))
+              for n,ranges in [
+                ('ربات مرجع/Market_Reading_Engine.mqh',[(1,520)]),
+                ('ربات مرجع/Market_Context.mqh',[(1,450)]),
+                ('ربات مرجع/Market_Regime.mqh',[(1,420)]),
+                ('ربات مرجع/Market_Structure.mqh',[(1,520)])
+              ]:
+                  lines=z.read(n).decode('utf-8-sig',errors='replace').splitlines()
+                  print(f"\n===== {n} =====")
+                  for a,b in ranges:
+                      for i in range(a-1,min(b,len(lines))):
+                          if any(k in lines[i] for k in ['Direction','direction','bias','state','trend','bullish','bearish','score','current_price','recent','M5']):
+                              print(f"{i+1}: {lines[i]}")
