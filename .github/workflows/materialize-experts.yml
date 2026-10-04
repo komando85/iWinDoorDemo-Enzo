@@ -1,25 +1,36 @@
-name: materialize-experts
+name: inspect-v568-source
 on:
   push:
 jobs:
-  unpack:
+  inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unpack Experts with Python
+      - name: Inspect source
         shell: python
         run: |
-          import zipfile, pathlib
-          root=pathlib.Path('.')
+          import zipfile,re
           with zipfile.ZipFile('Experts.zip') as z:
-              z.extractall(root)
-          print("materialized reference files")
-      - name: Commit materialized files
-        shell: bash
-        run: |
-          git config user.name "OpenAI"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "ربات مرجع"
-          git status --short
-          git commit -m "Materialize reference Experts files for V5.68 fix" || true
-          git push
+              def read(n): return z.read(n).decode('utf-8-sig',errors='replace').splitlines()
+              specs=[
+                ('ربات مرجع/TFlab New EA V.5.mq5',
+                 ['ENUM_SCENARIO_DIRECTION','direction =','direction=','Strategy_Create','Scenario_CreateFromEvidence','g_regime','g_move']),
+                ('ربات مرجع/Strategy_Engine.mqh',
+                 ['result.direction','direction =','direction=','Strategy_IsBuy','Strategy_IsSell','Scenario_Create']),
+                ('ربات مرجع/Market_Reading_Engine.mqh',
+                 ['direction','trend','bias','BUY','SELL']),
+                ('ربات مرجع/Market_Truth_Engine.mqh',
+                 ['direction','truth','BUY','SELL','impulse']),
+                ('ربات مرجع/Impulse_Correction.mqh',
+                 ['direction','state','MOVE_STATE']),
+              ]
+              for n,pats in specs:
+                  lines=read(n)
+                  print("\n===== "+n+" ("+str(len(lines))+" lines) =====")
+                  for p in pats:
+                      hits=[i for i,x in enumerate(lines) if p in x]
+                      print("PAT",p,"HITS",hits[:30])
+                      for i in hits[:12]:
+                          a=max(0,i-4);b=min(len(lines),i+9)
+                          print("---",i+1,"---")
+                          print("\n".join(f"{j+1}: {lines[j]}" for j in range(a,b)))
