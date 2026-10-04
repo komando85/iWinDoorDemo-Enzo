@@ -1,4 +1,4 @@
-name: inspect-v568-truth
+name: inspect-v568-truth-use
 on:
   push:
 jobs:
@@ -6,16 +6,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect Market Truth
+      - name: Inspect truth population and locks
         shell: python
         run: |
           import zipfile
           with zipfile.ZipFile('Experts.zip') as z:
-              def dump(name, ranges):
-                  lines=z.read(name).decode('utf-8-sig',errors='replace').splitlines()
-                  print("\n===== "+name+" =====")
-                  for a,b in ranges:
-                      print(f"--- {a}-{b} ---")
-                      print("\n".join(f"{i+1}: {lines[i]}" for i in range(a-1,min(b,len(lines)))))
-              dump('ربات مرجع/Market_Truth_Engine.mqh',[(1,220),(220,520),(520,900)])
-              dump('ربات مرجع/TFlab New EA V.5.mq5',[(3300,3785),(3900,4060),(4060,4360)])
+              lines=z.read('ربات مرجع/TFlab New EA V.5.mq5').decode('utf-8-sig',errors='replace').splitlines()
+              for a,b in [(2900,3320),(1470,1535),(1580,1695),(3960,4055)]:
+                  print(f"\n===== MAIN {a}-{b} =====")
+                  print("\n".join(f"{i+1}: {lines[i]}" for i in range(a-1,min(b,len(lines)))))
+              t=z.read('ربات مرجع/Market_Truth_Engine.mqh').decode('utf-8-sig',errors='replace').splitlines()
+              for a,b in [(280,390)]:
+                  print(f"\n===== TRUTH {a}-{b} =====")
+                  print("\n".join(f"{i+1}: {t[i]}" for i in range(a-1,min(b,len(t)))))
