@@ -1,0 +1,20 @@
+name: materialize-experts
+on:
+  workflow_dispatch:
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack Experts
+        shell: bash
+        run: |
+          unzip -o "Experts.zip" -d .
+          find . -maxdepth 3 -type f | sort | head -200
+          git config user.name "OpenAI"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "ربات مرجع" || true
+          git add .
+          git status --short
+          git commit -m "Materialize reference Experts files for V5.68 fix" || exit 0
+          git push
