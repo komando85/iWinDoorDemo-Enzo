@@ -167,32 +167,7 @@ lock_replacement = """bool StrongDirectionalLockAllows(
 }
 
 //====================================================================
-// گیت تصمیم ورودconst bool truth_authoritative =
-       MarketTruth_IsAuthoritativeForEntry() &&
-       ((g_market_truth.direction == MARKET_TRUTH_BUY &&
-         direction == SCENARIO_DIRECTION_BUY) ||
-        (g_market_truth.direction == MARKET_TRUTH_SELL &&
-         direction == SCENARIO_DIRECTION_SELL));
-
-    if(strong_bearish &&
-       direction ==
-          SCENARIO_DIRECTION_BUY &&
-       !truth_authoritative)
-    {
-       return false;
-    }
-
-    if(strong_bullish &&
-       direction ==
-          SCENARIO_DIRECTION_SELL &&
-       !truth_authoritative)
-    {
-       return false;
-    }"""
-assert src.count(old_lock) == 1, "Strong lock body not found"
-src = lock_pattern.sub(lock_replacement, src, count=1)
-
-
+// گیت تصمیم ورود
 # 5) Reconcile final candidate direction with current Market Truth
 old_tail = """    else
     if(sell_candidate)
