@@ -1,4 +1,4 @@
-name: inspect-v568-source
+name: inspect-v568-truth
 on:
   push:
 jobs:
@@ -6,17 +6,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect direction block
+      - name: Inspect Market Truth
         shell: python
         run: |
           import zipfile
           with zipfile.ZipFile('Experts.zip') as z:
-              def lines(n): return z.read(n).decode('utf-8-sig',errors='replace').splitlines()
-              main=lines('ربات مرجع/TFlab New EA V.5.mq5')
-              for a,b in [(3780,4040),(4400,4660),(1800,2025),(9600,9900)]:
-                  print(f"\n===== MAIN {a}-{b} =====")
-                  print("\n".join(f"{i+1}: {main[i]}" for i in range(a-1,min(b,len(main)))))
-              strat=lines('ربات مرجع/Strategy_Engine.mqh')
-              for a,b in [(1,220),(1030,1660)]:
-                  print(f"\n===== STRATEGY {a}-{b} =====")
-                  print("\n".join(f"{i+1}: {strat[i]}" for i in range(a-1,min(b,len(strat)))))
+              def dump(name, ranges):
+                  lines=z.read(name).decode('utf-8-sig',errors='replace').splitlines()
+                  print("\n===== "+name+" =====")
+                  for a,b in ranges:
+                      print(f"--- {a}-{b} ---")
+                      print("\n".join(f"{i+1}: {lines[i]}" for i in range(a-1,min(b,len(lines)))))
+              dump('ربات مرجع/Market_Truth_Engine.mqh',[(1,220),(220,520),(520,900)])
+              dump('ربات مرجع/TFlab New EA V.5.mq5',[(3300,3785),(3900,4060),(4060,4360)])
