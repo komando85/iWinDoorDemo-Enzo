@@ -30,10 +30,15 @@ jobs:
           src = main_old.read_text(encoding="utf-8-sig")
 
           # Version / title
-          src, n = re.subn(r'#property\\s+version\\s+["\\'][^"\\']+["\\']',
-                            '#property version "5.68"', src, count=1)
-          assert n == 1, "Version property not found"
-
+          lines = src.splitlines()
+          version_hits = 0
+          for i, line in enumerate(lines):
+              if "#property version" in line:
+                  lines[i] = '#property version "5.68"'
+                  version_hits += 1
+                  break
+          assert version_hits == 1, "Version property not found"
+          src = "\n".join(lines) + ("\n" if src.endswith("\n") else "")
           src = src.replace("TFlab New EA V.5", "TFlab New EA V.5.68")
 
           # Add the Market Truth authority helper immediately before the
