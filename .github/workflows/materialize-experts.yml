@@ -6,31 +6,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect source
+      - name: Inspect direction block
         shell: python
         run: |
-          import zipfile,re
+          import zipfile
           with zipfile.ZipFile('Experts.zip') as z:
-              def read(n): return z.read(n).decode('utf-8-sig',errors='replace').splitlines()
-              specs=[
-                ('ربات مرجع/TFlab New EA V.5.mq5',
-                 ['ENUM_SCENARIO_DIRECTION','direction =','direction=','Strategy_Create','Scenario_CreateFromEvidence','g_regime','g_move']),
-                ('ربات مرجع/Strategy_Engine.mqh',
-                 ['result.direction','direction =','direction=','Strategy_IsBuy','Strategy_IsSell','Scenario_Create']),
-                ('ربات مرجع/Market_Reading_Engine.mqh',
-                 ['direction','trend','bias','BUY','SELL']),
-                ('ربات مرجع/Market_Truth_Engine.mqh',
-                 ['direction','truth','BUY','SELL','impulse']),
-                ('ربات مرجع/Impulse_Correction.mqh',
-                 ['direction','state','MOVE_STATE']),
-              ]
-              for n,pats in specs:
-                  lines=read(n)
-                  print("\n===== "+n+" ("+str(len(lines))+" lines) =====")
-                  for p in pats:
-                      hits=[i for i,x in enumerate(lines) if p in x]
-                      print("PAT",p,"HITS",hits[:30])
-                      for i in hits[:12]:
-                          a=max(0,i-4);b=min(len(lines),i+9)
-                          print("---",i+1,"---")
-                          print("\n".join(f"{j+1}: {lines[j]}" for j in range(a,b)))
+              def lines(n): return z.read(n).decode('utf-8-sig',errors='replace').splitlines()
+              main=lines('ربات مرجع/TFlab New EA V.5.mq5')
+              for a,b in [(3780,4040),(4400,4660),(1800,2025),(9600,9900)]:
+                  print(f"\n===== MAIN {a}-{b} =====")
+                  print("\n".join(f"{i+1}: {main[i]}" for i in range(a-1,min(b,len(main)))))
+              strat=lines('ربات مرجع/Strategy_Engine.mqh')
+              for a,b in [(1,220),(1030,1660)]:
+                  print(f"\n===== STRATEGY {a}-{b} =====")
+                  print("\n".join(f"{i+1}: {strat[i]}" for i in range(a-1,min(b,len(strat)))))
