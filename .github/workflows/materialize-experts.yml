@@ -1,6 +1,6 @@
 name: materialize-experts
 on:
-  workflow_dispatch:
+  push:
 jobs:
   unpack:
     runs-on: ubuntu-latest
@@ -18,3 +18,5 @@ jobs:
           git status --short
           git commit -m "Materialize reference Experts files for V5.68 fix" || exit 0
           git push
+
+# trigger
