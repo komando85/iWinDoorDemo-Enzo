@@ -232,62 +232,6 @@ reconcile = """
 
 src = src[:none_if] + reconcile + src[none_if:]
 
-# 4) Final Entry / SL / TP geometry integrity
-# ------------------------------------------------------------
-geom_marker = """    if(!Target_UpdateStatus(
-       new_target,
-       TimeCurrent()))
-    {
-       SetScenarioDiagnostic(
-          "TARGET_STATUS_FAIL");
-       return false;
-    }"""
-
-geom_insert = geom_marker + """
-
-    //===============================================================
-    // DIRECTION / ENTRY / SL / TP INTEGRITY
-    //===============================================================
-    if(new_scenario.entry_price <= 0.0 ||
-       new_sl_plan.stop_price <= 0.0 ||
-       target <= 0.0)
-    {
-       SetScenarioDiagnostic(
-          "DIRECTION_GEOMETRY_FAIL | قیمت‌های Entry/SL/TP نامعتبر است");
-       return false;
-    }
-
-    if(direction == SCENARIO_DIRECTION_BUY)
-    {
-       if(!(new_sl_plan.stop_price < new_scenario.entry_price &&
-            target > new_scenario.entry_price))
-       {
-          SetScenarioDiagnostic(
-             "DIRECTION_GEOMETRY_FAIL | BUY باید SL زیر Entry و TP بالای Entry داشته باشد");
-          return false;
-       }
-    }
-    else
-    if(direction == SCENARIO_DIRECTION_SELL)
-    {
-       if(!(new_sl_plan.stop_price > new_scenario.entry_price &&
-            target < new_scenario.entry_price))
-       {
-          SetScenarioDiagnostic(
-             "DIRECTION_GEOMETRY_FAIL | SELL باید SL بالای Entry و TP زیر Entry داشته باشد");
-          return false;
-       }
-    }
-    else
-    {
-       SetScenarioDiagnostic(
-          "DIRECTION_GEOMETRY_FAIL | جهت معامله مشخص نیست");
-       return false;
-    }"""
-
-assert src.count(geom_marker) == 1
-src = src.replace(geom_marker, geom_insert, 1)
-
 main_old.write_text(src, encoding="utf-8")
 main_old.rename(main_new)
 
