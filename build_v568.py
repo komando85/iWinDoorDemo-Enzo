@@ -1,0 +1,309 @@
+import zipfile, pathlib, re, shutil, textwrap
+
+SRC = pathlib.Path("Experts.zip")
+WORK = pathlib.Path("_v568")
+OUT = pathlib.Path("TFlab_Experts_V5.68.zip")
+
+if WORK.exists():
+    shutil.rmtree(WORK)
+
+WORK.mkdir()
+with zipfile.ZipFile(SRC) as z:
+    z.extractall(WORK)
+
+root = WORK / "ربات مرجع"
+main_old = root / "TFlab New EA V.5.mq5"
+main_new = root / "TFlab New EA V.5.68.mq5"
+
+src = main_old.read_text(encoding="utf-8-sig")
+
+# 1) Version
+lines = src.splitlines()
+version_hits = 0
+for i, line in enumerate(lines):
+    if "#property version" in line:
+        lines[i] = '#property version "5.68"'
+        version_hits += 1
+        break
+assert version_hits == 1, "Version property not found"
+src = "\n".join(lines) + ("\n" if src.endswith("\n") else "")
+
+# 2) Visible EA title/version
+src = src.replace("TFlab New EA V.5", "TFlab New EA V.5.68")
+
+# 3) Market Truth authoritative helper
+marker = """//====================================================================
+// قفل جهت مخالف روند قوی
+//===================================================================="""
+helper = """
+//====================================================================
+// تعیین اینکه Market Truth در لحظه Entry مرجع معتبر جهت است یا خیر
+//====================================================================
+bool MarketTruth_IsAuthoritativeForEntry()
+{
+   if(!Inp_Use_Market_Truth)
+      return false;
+
+   if(!g_market_truth.valid)
+      return false;
+
+   if(!g_market_truth.strong_market_move)
+      return false;
+
+   if(!g_market_truth.continuation_ready)
+      return false;
+
+   if(g_market_truth.direction == MARKET_TRUTH_NONE)
+      return false;
+
+   // در فاز Reversal، Truth فقط تشخیص را ثبت می‌کند و نباید
+   // همان لحظه باعث چرخش خودکار جهت Entry شود.
+   if(g_market_truth.phase == MARKET_TRUTH_PHASE_REVERSAL)
+      return false;
+
+   return (g_market_truth.phase == MARKET_TRUTH_PHASE_EXPANSION ||
+           g_market_truth.phase == MARKET_TRUTH_PHASE_PULLBACK);
+}
+
+//====================================================================
+// هماهنگ‌سازی جهت Entry با Market Truth معتبر
+//====================================================================
+ENUM_SCENARIO_DIRECTION ReconcileEntryDirectionWithMarketTruth(
+   const ENUM_SCENARIO_DIRECTION candidate_direction,
+   string &reason)
+{
+   reason = "";
+
+   if(candidate_direction == SCENARIO_DIRECTION_NONE)
+      return SCENARIO_DIRECTION_NONE;
+
+   if(!MarketTruth_IsAuthoritativeForEntry())
+      return candidate_direction;
+
+   ENUM_SCENARIO_DIRECTION truth_direction = SCENARIO_DIRECTION_NONE;
+
+   if(g_market_truth.direction == MARKET_TRUTH_BUY)
+      truth_direction = SCENARIO_DIRECTION_BUY;
+   else if(g_market_truth.direction == MARKET_TRUTH_SELL)
+      truth_direction = SCENARIO_DIRECTION_SELL;
+
+   if(truth_direction == SCENARIO_DIRECTION_NONE)
+      return candidate_direction;
+
+   if(truth_direction == candidate_direction)
+   {
+      reason =
+         "Market Truth با Candidate هم‌جهت است | Direction=" +
+         ScenarioDirectionToPersian(candidate_direction);
+      return candidate_direction;
+   }
+
+   reason =
+      "Market Truth جهت Candidate را اصلاح کرد | Candidate=" +
+      ScenarioDirectionToPersian(candidate_direction) +
+      " | Truth=" +
+      ScenarioDirectionToPersian(truth_direction) +
+      " | Phase=" +
+      MarketTruth_PhaseToString(g_market_truth.phase) +
+      " | MoveATR=" +
+      DoubleToString(g_market_truth.move_atr_multiple,2);
+
+   return truth_direction;
+}
+
+"""
+assert src.count(marker) == 1, "Strong lock marker count mismatch"
+src = src.replace(marker, helper + marker, 1)
+
+# 4) Let authoritative current Truth pass the strong-background lock
+old_lock = """    if(strong_bearish &&
+       direction ==
+          SCENARIO_DIRECTION_BUY)
+    {
+       return false;
+    }
+
+    if(strong_bullish &&
+       direction ==
+          SCENARIO_DIRECTION_SELL)
+    {
+       return false;
+    }"""
+new_lock = """    const bool truth_authoritative =
+       MarketTruth_IsAuthoritativeForEntry() &&
+       ((g_market_truth.direction == MARKET_TRUTH_BUY &&
+         direction == SCENARIO_DIRECTION_BUY) ||
+        (g_market_truth.direction == MARKET_TRUTH_SELL &&
+         direction == SCENARIO_DIRECTION_SELL));
+
+    if(strong_bearish &&
+       direction ==
+          SCENARIO_DIRECTION_BUY &&
+       !truth_authoritative)
+    {
+       return false;
+    }
+
+    if(strong_bullish &&
+       direction ==
+          SCENARIO_DIRECTION_SELL &&
+       !truth_authoritative)
+    {
+       return false;
+    }"""
+assert src.count(old_lock) == 1, "Strong lock body not found"
+src = src.replace(old_lock, new_lock, 1)
+
+# 5) Reconcile final candidate direction with current Market Truth
+old_tail = """    else
+    if(sell_candidate)
+       direction =
+          SCENARIO_DIRECTION_SELL;
+
+    if(direction ==
+       SCENARIO_DIRECTION_NONE)"""
+new_tail = """    else
+    if(sell_candidate)
+       direction =
+          SCENARIO_DIRECTION_SELL;
+
+    //===============================================================
+    // MARKET TRUTH DIRECTION RECONCILIATION
+    //===============================================================
+    ENUM_SCENARIO_DIRECTION candidate_direction_before_truth =
+       direction;
+
+    string direction_reconcile_reason = "";
+
+    ENUM_SCENARIO_DIRECTION reconciled_direction =
+       ReconcileEntryDirectionWithMarketTruth(
+          direction,
+          direction_reconcile_reason);
+
+    if(reconciled_direction != direction)
+    {
+       Print(
+          "[DIRECTION RECONCILE] ",
+          direction_reconcile_reason,
+          " | Price=",
+          DoubleToString(current_price,_Digits));
+
+       SetScenarioDiagnostic(
+          "DIRECTION_RECONCILED | Before=" +
+          ScenarioDirectionToPersian(candidate_direction_before_truth) +
+          " | After=" +
+          ScenarioDirectionToPersian(reconciled_direction) +
+          " | " +
+          direction_reconcile_reason);
+
+       direction =
+          reconciled_direction;
+    }
+    else
+    if(direction_reconcile_reason != "")
+    {
+       Print("[DIRECTION TRUTH ALIGN] ",
+             direction_reconcile_reason);
+    }
+
+    if(direction ==
+       SCENARIO_DIRECTION_NONE)"""
+assert src.count(old_tail) == 1, "Final direction tail not found"
+src = src.replace(old_tail, new_tail, 1)
+
+# 6) Hard geometry integrity after target/SL creation
+geom_marker = """    if(!Target_UpdateStatus(
+       new_target,
+       TimeCurrent()))
+    {
+       SetScenarioDiagnostic(
+          "TARGET_STATUS_FAIL");
+       return false;
+    }"""
+geom_insert = geom_marker + """
+
+    //===============================================================
+    // DIRECTION / ENTRY / SL / TP INTEGRITY
+    //===============================================================
+    if(new_scenario.entry_price <= 0.0 ||
+       new_sl_plan.stop_price <= 0.0 ||
+       target <= 0.0)
+    {
+       SetScenarioDiagnostic(
+          "DIRECTION_GEOMETRY_FAIL | قیمت‌های Entry/SL/TP نامعتبر است");
+       return false;
+    }
+
+    if(direction == SCENARIO_DIRECTION_BUY)
+    {
+       if(!(new_sl_plan.stop_price < new_scenario.entry_price &&
+            target > new_scenario.entry_price))
+       {
+          SetScenarioDiagnostic(
+             "DIRECTION_GEOMETRY_FAIL | BUY باید SL زیر Entry و TP بالای Entry داشته باشد");
+          return false;
+       }
+    }
+    else
+    if(direction == SCENARIO_DIRECTION_SELL)
+    {
+       if(!(new_sl_plan.stop_price > new_scenario.entry_price &&
+            target < new_scenario.entry_price))
+       {
+          SetScenarioDiagnostic(
+             "DIRECTION_GEOMETRY_FAIL | SELL باید SL بالای Entry و TP زیر Entry داشته باشد");
+          return false;
+       }
+    }
+    else
+    {
+       SetScenarioDiagnostic(
+          "DIRECTION_GEOMETRY_FAIL | جهت معامله مشخص نیست");
+       return false;
+    }"""
+assert src.count(geom_marker) == 1, "Target status marker not found"
+src = src.replace(geom_marker, geom_insert, 1)
+
+main_old.write_text(src, encoding="utf-8")
+main_old.rename(main_new)
+
+manifest = WORK / "V5.68_توضیحات_اصلاحیه.txt"
+manifest.write_text(textwrap.dedent("""
+نسخه: TFlab New EA V.5.68
+
+مبنای اصلاح:
+ربات مرجع سالم موجود در Experts.zip
+
+اصلاحات:
+1) وقتی Market Truth معتبر، قوی و آماده ادامه باشد، در تصمیم نهایی Entry مرجع جهت قرار می‌گیرد.
+2) در فاز Reversal، Market Truth باعث چرخش خودکار جهت Entry نمی‌شود.
+3) قفل جهت مخالف روند قوی، در صورت وجود Market Truth معتبر و هم‌جهت با Entry، جلوی Entry را نمی‌گیرد.
+4) قبل از ادامه ساخت سفارش، هندسه Entry/SL/TP به‌صورت سخت‌گیرانه بررسی می‌شود.
+5) فیلتر جدید RSI/ADX/امتیازدهی برای حذف فرصت‌ها اضافه نشده است.
+6) منطق محاسبات SL/TP تغییر داده نشده و فقط Integrity Gate نهایی اضافه شده است.
+
+توجه:
+این بسته بر پایه تحلیل لاگ V5.67 ساخته شده است. بک‌تست MetaTrader 5
+در محیط GitHub اجرا نشده و نتیجه سودآوری نسخه 5.68 هنوز نیازمند تستر است.
+""").strip() + "\n", encoding="utf-8")
+
+# Static sanity checks
+check = main_new.read_text(encoding="utf-8-sig")
+assert '#property version "5.68"' in check
+assert check.count("MarketTruth_IsAuthoritativeForEntry()") >= 2
+assert "ReconcileEntryDirectionWithMarketTruth" in check
+assert "[DIRECTION RECONCILE]" in check
+assert check.count("DIRECTION_GEOMETRY_FAIL") >= 3
+assert "TFlab New EA V.5.68" in check
+
+if OUT.exists():
+    OUT.unlink()
+
+with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as z:
+    for p in WORK.rglob("*"):
+        if p.is_file():
+            z.write(p, p.relative_to(WORK))
+
+print("BUILD_OK")
+print("SIZE", OUT.stat().st_size)
+print("MAIN", main_new.as_posix())
