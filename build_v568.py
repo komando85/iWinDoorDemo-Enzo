@@ -178,20 +178,11 @@ src = lock_pattern.sub(lock_replacement, src, count=1)
 
 # ------------------------------------------------------------
 # 3) Final candidate direction reconciliation
-# ------------------------------------------------------------
-old_tail = """    else
-    if(sell_candidate)
-       direction =
-          SCENARIO_DIRECTION_SELL;
+direction_anchor = re.compile(
+    r"(\\n\\s*else\\s*\\n\\s*if\\(sell_candidate\\)\\s*\\n\\s*direction\\s*=\\s*\\n\\s*SCENARIO_DIRECTION_SELL;\\s*\\n)(\\s*if\\(direction\\s*==\\s*\\n\\s*SCENARIO_DIRECTION_NONE\\s*\\))",
+    re.S)
 
-    if(direction ==
-       SCENARIO_DIRECTION_NONE)"""
-
-new_tail = """    else
-    if(sell_candidate)
-       direction =
-          SCENARIO_DIRECTION_SELL;
-
+new_tail = r"""\1
     //===============================================================
     // MARKET TRUTH DIRECTION RECONCILIATION
     //===============================================================
@@ -231,13 +222,11 @@ new_tail = """    else
              direction_reconcile_reason);
     }
 
-    if(direction ==
-       SCENARIO_DIRECTION_NONE)"""
+    \2"""
 
-assert src.count(old_tail) == 1
-src = src.replace(old_tail, new_tail, 1)
+assert direction_anchor.search(src), "Final direction anchor not found"
+src = direction_anchor.sub(new_tail, src, count=1)
 
-# ------------------------------------------------------------
 # 4) Final Entry / SL / TP geometry integrity
 # ------------------------------------------------------------
 geom_marker = """    if(!Target_UpdateStatus(
