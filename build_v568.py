@@ -178,11 +178,17 @@ src = lock_pattern.sub(lock_replacement, src, count=1)
 
 # ------------------------------------------------------------
 # 3) Final candidate direction reconciliation
-direction_anchor = re.compile(
-    r"(\\n\\s*else\\s*\\n\\s*if\\(sell_candidate\\)\\s*\\n\\s*direction\\s*=\\s*\\n\\s*SCENARIO_DIRECTION_SELL;\\s*\\n)(\\s*if\\(direction\\s*==\\s*\\n\\s*SCENARIO_DIRECTION_NONE\\s*\\))",
-    re.S)
+sell_marker = "SCENARIO_DIRECTION_SELL;"
+sell_pos = src.find(sell_marker, src.find("bool sell_candidate"))
+assert sell_pos >= 0, "SELL candidate assignment not found"
 
-new_tail = r"""\1
+direction_none_pattern = re.compile(
+    r"\\n\\s*if\\(direction\\s*==\\s*SCENARIO_DIRECTION_NONE\\s*\\)",
+    re.S)
+none_match = direction_none_pattern.search(src, sell_pos + len(sell_marker))
+assert none_match, "Final direction NONE gate not found"
+
+reconcile = r"""
     //===============================================================
     // MARKET TRUTH DIRECTION RECONCILIATION
     //===============================================================
@@ -222,10 +228,9 @@ new_tail = r"""\1
              direction_reconcile_reason);
     }
 
-    \2"""
+"""
 
-assert direction_anchor.search(src), "Final direction anchor not found"
-src = direction_anchor.sub(new_tail, src, count=1)
+src = src[:none_match.start()] + "\n" + reconcile + src[none_match.start()+1:]
 
 # 4) Final Entry / SL / TP geometry integrity
 # ------------------------------------------------------------
