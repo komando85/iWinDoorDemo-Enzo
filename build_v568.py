@@ -178,17 +178,17 @@ src = lock_pattern.sub(lock_replacement, src, count=1)
 
 # ------------------------------------------------------------
 # 3) Final candidate direction reconciliation
-sell_marker = "SCENARIO_DIRECTION_SELL;"
-sell_pos = src.find(sell_marker, src.find("bool sell_candidate"))
+sell_pos = src.find("SCENARIO_DIRECTION_SELL;", src.find("bool sell_candidate"))
 assert sell_pos >= 0, "SELL candidate assignment not found"
 
-direction_none_pattern = re.compile(
-    r"\\n\\s*if\\(direction\\s*==\\s*SCENARIO_DIRECTION_NONE\\s*\\)",
-    re.S)
-none_match = direction_none_pattern.search(src, sell_pos + len(sell_marker))
-assert none_match, "Final direction NONE gate not found"
+none_token = "SCENARIO_DIRECTION_NONE)"
+none_pos = src.find(none_token, sell_pos)
+assert none_pos >= 0, "Final direction NONE token not found"
 
-reconcile = r"""
+none_if = src.rfind("if(", sell_pos, none_pos)
+assert none_if >= 0, "Final direction NONE if() not found"
+
+reconcile = """
     //===============================================================
     // MARKET TRUTH DIRECTION RECONCILIATION
     //===============================================================
@@ -230,7 +230,7 @@ reconcile = r"""
 
 """
 
-src = src[:none_match.start()] + "\n" + reconcile + src[none_match.start()+1:]
+src = src[:none_if] + reconcile + src[none_if:]
 
 # 4) Final Entry / SL / TP geometry integrity
 # ------------------------------------------------------------
