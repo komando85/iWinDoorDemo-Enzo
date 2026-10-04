@@ -1,4 +1,8 @@
-import zipfile, pathlib, re, shutil, textwrap
+import pathlib
+import re
+import shutil
+import textwrap
+import zipfile
 
 SRC = pathlib.Path("Experts.zip")
 WORK = pathlib.Path("_v568")
@@ -6,8 +10,8 @@ OUT = pathlib.Path("TFlab_Experts_V5.68.zip")
 
 if WORK.exists():
     shutil.rmtree(WORK)
-
 WORK.mkdir()
+
 with zipfile.ZipFile(SRC) as z:
     z.extractall(WORK)
 
@@ -17,24 +21,23 @@ main_new = root / "TFlab New EA V.5.68.mq5"
 
 src = main_old.read_text(encoding="utf-8-sig")
 
-# 1) Version
+# Version property
 lines = src.splitlines()
-version_hits = 0
-for i, line in enumerate(lines):
-    if "#property version" in line:
-        lines[i] = '#property version "5.68"'
-        version_hits += 1
-        break
-assert version_hits == 1, "Version property not found"
+hits = [i for i, line in enumerate(lines) if "#property version" in line]
+assert len(hits) == 1, f"version property count={len(hits)}"
+lines[hits[0]] = '#property version "5.68"'
 src = "\n".join(lines) + ("\n" if src.endswith("\n") else "")
 
-# 2) Visible EA title/version
+# Visible title/version
 src = src.replace("TFlab New EA V.5", "TFlab New EA V.5.68")
 
-# 3) Market Truth authoritative helper
+# ------------------------------------------------------------
+# 1) Market Truth authority
+# ------------------------------------------------------------
 marker = """//====================================================================
 // قفل جهت مخالف روند قوی
 //===================================================================="""
+
 helper = """
 //====================================================================
 // تعیین اینکه Market Truth در لحظه Entry مرجع معتبر جهت است یا خیر
@@ -112,15 +115,16 @@ ENUM_SCENARIO_DIRECTION ReconcileEntryDirectionWithMarketTruth(
 }
 
 """
-assert src.count(marker) == 1, "Strong lock marker count mismatch"
+
+assert src.count(marker) == 1
 src = src.replace(marker, helper + marker, 1)
 
-# 4) Let authoritative current Truth pass the strong-background lock
+# ------------------------------------------------------------
+# 2) Strong directional lock respects authoritative Truth
+# ------------------------------------------------------------
 lock_pattern = re.compile(
-    r"bool StrongDirectionalLockAllows\\(.*?\\n\\}\\n\\n//====================================================================\\n// گیت تصمیم ورود",
+    r"bool StrongDirectionalLockAllows\(.*?\n\}\n\n//====================================================================\n// گیت تصمیم ورود",
     re.S)
-lock_match = lock_pattern.search(src)
-assert lock_match, "StrongDirectionalLock function not found"
 
 lock_replacement = """bool StrongDirectionalLockAllows(
    const ENUM_SCENARIO_DIRECTION direction,
@@ -167,8 +171,14 @@ lock_replacement = """bool StrongDirectionalLockAllows(
 }
 
 //====================================================================
-// گیت تصمیم ورود
-# 5) Reconcile final candidate direction with current Market Truth
+// گیت تصمیم ورود"""
+
+assert lock_pattern.search(src), "StrongDirectionalLockAllows not found"
+src = lock_pattern.sub(lock_replacement, src, count=1)
+
+# ------------------------------------------------------------
+# 3) Final candidate direction reconciliation
+# ------------------------------------------------------------
 old_tail = """    else
     if(sell_candidate)
        direction =
@@ -176,6 +186,7 @@ old_tail = """    else
 
     if(direction ==
        SCENARIO_DIRECTION_NONE)"""
+
 new_tail = """    else
     if(sell_candidate)
        direction =
@@ -222,10 +233,13 @@ new_tail = """    else
 
     if(direction ==
        SCENARIO_DIRECTION_NONE)"""
-assert src.count(old_tail) == 1, "Final direction tail not found"
+
+assert src.count(old_tail) == 1
 src = src.replace(old_tail, new_tail, 1)
 
-# 6) Hard geometry integrity after target/SL creation
+# ------------------------------------------------------------
+# 4) Final Entry / SL / TP geometry integrity
+# ------------------------------------------------------------
 geom_marker = """    if(!Target_UpdateStatus(
        new_target,
        TimeCurrent()))
@@ -234,6 +248,7 @@ geom_marker = """    if(!Target_UpdateStatus(
           "TARGET_STATUS_FAIL");
        return false;
     }"""
+
 geom_insert = geom_marker + """
 
     //===============================================================
@@ -275,7 +290,8 @@ geom_insert = geom_marker + """
           "DIRECTION_GEOMETRY_FAIL | جهت معامله مشخص نیست");
        return false;
     }"""
-assert src.count(geom_marker) == 1, "Target status marker not found"
+
+assert src.count(geom_marker) == 1
 src = src.replace(geom_marker, geom_insert, 1)
 
 main_old.write_text(src, encoding="utf-8")
@@ -289,26 +305,28 @@ manifest.write_text(textwrap.dedent("""
 ربات مرجع سالم موجود در Experts.zip
 
 اصلاحات:
-1) وقتی Market Truth معتبر، قوی و آماده ادامه باشد، در تصمیم نهایی Entry مرجع جهت قرار می‌گیرد.
+1) در صورت معتبر، قوی و آماده ادامه بودن Market Truth، جهت آن مرجع حل تعارض Direction در زمان Entry است.
 2) در فاز Reversal، Market Truth باعث چرخش خودکار جهت Entry نمی‌شود.
-3) قفل جهت مخالف روند قوی، در صورت وجود Market Truth معتبر و هم‌جهت با Entry، جلوی Entry را نمی‌گیرد.
-4) قبل از ادامه ساخت سفارش، هندسه Entry/SL/TP به‌صورت سخت‌گیرانه بررسی می‌شود.
-5) فیلتر جدید RSI/ADX/امتیازدهی برای حذف فرصت‌ها اضافه نشده است.
-6) منطق محاسبات SL/TP تغییر داده نشده و فقط Integrity Gate نهایی اضافه شده است.
+3) قفل جهت مخالف روند قوی، در صورت وجود Truth معتبر و هم‌جهت، مانع Entry نمی‌شود.
+4) قبل از ساخت سفارش، رابطه Entry/SL/TP با Direction به‌صورت سخت‌گیرانه کنترل می‌شود.
+5) فیلتر جدید برای حذف مصنوعی فرصت‌ها اضافه نشده است.
+6) محاسبات اصلی SL/TP تغییر نکرده و فقط کنترل نهایی یکپارچگی اضافه شده است.
 
 توجه:
-این بسته بر پایه تحلیل لاگ V5.67 ساخته شده است. بک‌تست MetaTrader 5
-در محیط GitHub اجرا نشده و نتیجه سودآوری نسخه 5.68 هنوز نیازمند تستر است.
+این بسته بر اساس تحلیل لاگ V5.67 ساخته شده است.
+بک‌تست MetaTrader 5 در این محیط اجرا نشده است و نتیجه سودآوری V5.68
+پس از اجرای Strategy Tester باید ارزیابی شود.
 """).strip() + "\n", encoding="utf-8")
 
-# Static sanity checks
 check = main_new.read_text(encoding="utf-8-sig")
+
 assert '#property version "5.68"' in check
+assert "TFlab New EA V.5.68" in check
 assert check.count("MarketTruth_IsAuthoritativeForEntry()") >= 2
 assert "ReconcileEntryDirectionWithMarketTruth" in check
 assert "[DIRECTION RECONCILE]" in check
-assert check.count("DIRECTION_GEOMETRY_FAIL") >= 3
-assert "TFlab New EA V.5.68" in check
+assert "DIRECTION_GEOMETRY_FAIL" in check
+assert check.count("StrongDirectionalLockAllows(") >= 1
 
 if OUT.exists():
     OUT.unlink()
@@ -319,5 +337,5 @@ with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as z:
             z.write(p, p.relative_to(WORK))
 
 print("BUILD_OK")
-print("SIZE", OUT.stat().st_size)
-print("MAIN", main_new.as_posix())
+print("PACKAGE", OUT)
+print("BYTES", OUT.stat().st_size)
