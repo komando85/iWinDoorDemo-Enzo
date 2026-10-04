@@ -116,20 +116,58 @@ assert src.count(marker) == 1, "Strong lock marker count mismatch"
 src = src.replace(marker, helper + marker, 1)
 
 # 4) Let authoritative current Truth pass the strong-background lock
-old_lock = """    if(strong_bearish &&
-       direction ==
-          SCENARIO_DIRECTION_BUY)
-    {
-       return false;
-    }
+lock_pattern = re.compile(
+    r"bool StrongDirectionalLockAllows\\(.*?\\n\\}\\n\\n//====================================================================\\n// گیت تصمیم ورود",
+    re.S)
+lock_match = lock_pattern.search(src)
+assert lock_match, "StrongDirectionalLock function not found"
 
-    if(strong_bullish &&
-       direction ==
-          SCENARIO_DIRECTION_SELL)
-    {
-       return false;
-    }"""
-new_lock = """    const bool truth_authoritative =
+lock_replacement = """bool StrongDirectionalLockAllows(
+   const ENUM_SCENARIO_DIRECTION direction,
+   const ENUM_HTF_DIRECTION htf)
+{
+   const bool strong_bearish =
+      g_regime.valid &&
+      g_regime.regime ==
+         MARKET_REGIME_DOWNTREND &&
+      (g_structure.state ==
+         STRUCTURE_STATE_BEARISH ||
+       htf ==
+         HTF_DIRECTION_BEARISH);
+
+   const bool strong_bullish =
+      g_regime.valid &&
+      g_regime.regime ==
+         MARKET_REGIME_UPTREND &&
+      (g_structure.state ==
+         STRUCTURE_STATE_BULLISH ||
+       htf ==
+         HTF_DIRECTION_BULLISH);
+
+   const bool truth_authoritative =
+      MarketTruth_IsAuthoritativeForEntry() &&
+      ((g_market_truth.direction == MARKET_TRUTH_BUY &&
+        direction == SCENARIO_DIRECTION_BUY) ||
+       (g_market_truth.direction == MARKET_TRUTH_SELL &&
+        direction == SCENARIO_DIRECTION_SELL));
+
+   if(strong_bearish &&
+      direction ==
+         SCENARIO_DIRECTION_BUY &&
+      !truth_authoritative)
+      return false;
+
+   if(strong_bullish &&
+      direction ==
+         SCENARIO_DIRECTION_SELL &&
+      !truth_authoritative)
+      return false;
+
+   return true;
+}
+
+//====================================================================
+// گیت تصمیم ورودconst bool truth_authoritative =
        MarketTruth_IsAuthoritativeForEntry() &&
        ((g_market_truth.direction == MARKET_TRUTH_BUY &&
          direction == SCENARIO_DIRECTION_BUY) ||
@@ -152,7 +190,8 @@ new_lock = """    const bool truth_authoritative =
        return false;
     }"""
 assert src.count(old_lock) == 1, "Strong lock body not found"
-src = src.replace(old_lock, new_lock, 1)
+src = lock_pattern.sub(lock_replacement, src, count=1)
+
 
 # 5) Reconcile final candidate direction with current Market Truth
 old_tail = """    else
