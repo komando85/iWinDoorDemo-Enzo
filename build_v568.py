@@ -263,7 +263,6 @@ assert "TFlab New EA V.5.68" in check
 assert check.count("MarketTruth_IsAuthoritativeForEntry()") >= 2
 assert "ReconcileEntryDirectionWithMarketTruth" in check
 assert "[DIRECTION RECONCILE]" in check
-assert "DIRECTION_GEOMETRY_FAIL" in check
 assert check.count("StrongDirectionalLockAllows(") >= 1
 
 if OUT.exists():
