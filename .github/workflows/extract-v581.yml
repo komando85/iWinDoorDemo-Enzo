@@ -1,0 +1,24 @@
+name: Extract V5.81 package
+
+on:
+  push:
+    branches: [ analysis-v581-extract ]
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract packages
+        run: |
+          mkdir -p extracted/log581 extracted/experts
+          unzip -o -q 'لاگ 5.81.zip' -d extracted/log581
+          unzip -o -q 'Experts.zip' -d extracted/experts
+      - name: Upload extracted packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: v581-extracted
+          path: extracted/
