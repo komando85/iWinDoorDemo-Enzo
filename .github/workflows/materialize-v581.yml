@@ -1,0 +1,45 @@
+name: Materialize V5.81 analysis sources
+
+on:
+  push:
+    paths:
+      - 'Experts.zip'
+      - 'لاگ 5.81.zip'
+      - 'TFlab_New_EA_V5.61_100درصد برد 114 دلار.zip'
+      - 'مرجع.zip'
+      - '.github/workflows/materialize-v581.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract source and logs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _materialized
+          mkdir -p _materialized
+          for f in "Experts.zip" "لاگ 5.81.zip" "TFlab_New_EA_V5.61_100درصد برد 114 دلار.zip" "مرجع.zip"; do
+            if [ -f "$f" ]; then
+              d="_materialized/$(basename "$f" .zip)"
+              mkdir -p "$d"
+              unzip -q "$f" -d "$d"
+            fi
+          done
+          find _materialized -type f | sort > _materialized/filelist.txt
+      - name: Commit materialized files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add _materialized
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Materialize V5.81 source and log files for analysis"
+          git push
