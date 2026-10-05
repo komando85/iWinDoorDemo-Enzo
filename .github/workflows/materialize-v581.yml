@@ -1,45 +1,35 @@
 name: Materialize V5.81 analysis sources
 
 on:
-  push:
-    paths:
-      - 'Experts.zip'
-      - 'لاگ 5.81.zip'
-      - 'TFlab_New_EA_V5.61_100درصد برد 114 دلار.zip'
-      - 'مرجع.zip'
-      - '.github/workflows/materialize-v581.yml'
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   materialize:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare analysis branch
+      - name: Extract V5.81 log
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin
-          git switch -C analysis/v581-materialized
           rm -rf _materialized
           mkdir -p _materialized
-          for f in "Experts.zip" "لاگ 5.81.zip" "TFlab_New_EA_V5.61_100درصد برد 114 دلار.zip" "مرجع.zip"; do
-            if [ -f "$f" ]; then
-              d="_materialized/$(basename "$f" .zip)"
-              mkdir -p "$d"
-              unzip -q "$f" -d "$d"
-            fi
-          done
-          find _materialized -type f | sort > _materialized/filelist.txt
-      - name: Commit and push analysis branch
+          unzip -q "لاگ 5.81.zip" -d "_materialized/log581"
+          find _materialized/log581 -type f | sort > _materialized/filelist.txt
+      - name: Package extracted log
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add _materialized
-          git commit -m "Materialize V5.81 source and log files for analysis"
-          git push -u origin analysis/v581-materialized --force
+          cd _materialized
+          zip -qr ../v581-materialized-log.zip log581 filelist.txt
+      - name: Upload extracted V5.81 log
+        uses: actions/upload-artifact@v4
+        with:
+          name: v581-materialized-log
+          path: v581-materialized-log.zip
+          if-no-files-found: error
