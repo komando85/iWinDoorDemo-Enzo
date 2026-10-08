@@ -15,10 +15,20 @@ jobs:
           rm -rf extracted599
           mkdir -p extracted599
           unzip -q "لاگ 5.99.zip" -d extracted599
+          echo "=== LOG FILES ==="
           find extracted599 -type f -maxdepth 5 -print
-      - name: Upload extracted log
+      - name: Extract Experts archive
+        run: |
+          rm -rf experts599
+          mkdir -p experts599
+          unzip -q Experts.zip -d experts599
+          echo "=== EXPERT FILES ==="
+          find experts599 -type f -maxdepth 5 -print
+      - name: Upload extracted files
         uses: actions/upload-artifact@v4
         with:
-          name: log599-extracted
-          path: extracted599
+          name: log599-and-experts-extracted
+          path: |
+            extracted599
+            experts599
           if-no-files-found: error
