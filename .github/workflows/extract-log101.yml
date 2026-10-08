@@ -1,0 +1,22 @@
+name: extract-log101
+on:
+  push:
+    branches:
+      - analysis/log101
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract log archive
+        run: |
+          rm -rf extracted101
+          mkdir -p extracted101
+          unzip -q "لاگ 5.101.zip" -d extracted101
+          find extracted101 -type f -maxdepth 5 -print
+      - name: Upload extracted log
+        uses: actions/upload-artifact@v4
+        with:
+          name: log101-extracted
+          path: extracted101
+          if-no-files-found: error
