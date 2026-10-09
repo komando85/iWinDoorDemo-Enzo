@@ -1,0 +1,22 @@
+name: extract-log107
+on:
+  push:
+    branches:
+      - analysis/log107
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract log archive
+        run: |
+          rm -rf extracted107
+          mkdir -p extracted107
+          unzip -q "لاگ 5107.zip" -d extracted107
+          find extracted107 -type f -maxdepth 5 -print
+      - name: Upload extracted log
+        uses: actions/upload-artifact@v4
+        with:
+          name: log107-extracted
+          path: extracted107
+          if-no-files-found: error
