@@ -1,0 +1,22 @@
+name: extract-log5111
+on:
+  push:
+    branches:
+      - analysis/log5111
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract log archive
+        run: |
+          rm -rf extracted5111
+          mkdir -p extracted5111
+          unzip -q "لاگ 5111.zip" -d extracted5111
+          find extracted5111 -type f -maxdepth 5 -print
+      - name: Upload extracted log
+        uses: actions/upload-artifact@v4
+        with:
+          name: log5111-extracted
+          path: extracted5111
+          if-no-files-found: error
