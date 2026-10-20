@@ -1,0 +1,61 @@
+PanjerehNegar build diagnostic log
+Folder: C:\Users\Ghahari\Desktop\PanjerehNegar
+Date: Tue 10/20/2026  4:16:45.85
+Output folder: publish_30438_25963
+
+--- dotnet --info ---
+.NET SDK:
+ Version:           8.0.426
+ Commit:            a021cd4eac
+ Workload version:  8.0.400-manifests.1f030c1a
+ MSBuild version:   17.11.69+4d6a29faa
+
+Runtime Environment:
+ OS Name:     Windows
+ OS Version:  10.0.28000
+ OS Platform: Windows
+ RID:         win-x64
+ Base Path:   C:\Program Files\dotnet\sdk\8.0.426\
+
+.NET workloads installed:
+Configured to use loose manifests when installing new manifests.
+There are no installed workloads to display.
+
+Host:
+  Version:      10.0.7
+  Architecture: x64
+  Commit:       b16286c228
+
+.NET SDKs installed:
+  8.0.426 [C:\Program Files\dotnet\sdk]
+
+.NET runtimes installed:
+  Microsoft.AspNetCore.App 8.0.32 [C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.NETCore.App 5.0.17 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 8.0.32 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 9.0.0 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 10.0.7 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.WindowsDesktop.App 5.0.17 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
+  Microsoft.WindowsDesktop.App 8.0.32 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
+  Microsoft.WindowsDesktop.App 9.0.0 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
+  Microsoft.WindowsDesktop.App 10.0.7 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
+
+Other architectures found:
+  None
+
+Environment variables:
+  Not set
+
+global.json file:
+  Not found
+
+Learn more:
+  https://aka.ms/dotnet/info
+
+Download .NET:
+  https://aka.ms/dotnet/download
+
+--- dotnet publish ---
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Users\Ghahari\Desktop\PanjerehNegar\Views\DesignWorkspace.xaml.cs(264,80): error CS0176: Member 'ColorConverter.ConvertFromString(string)' cannot be accessed with an instance reference; qualify it with a type name instead [C:\Users\Ghahari\Desktop\PanjerehNegar\PanjerehNegar_2lwi1nfi_wpftmp.csproj]
